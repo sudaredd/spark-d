@@ -1,0 +1,3 @@
+Exception IOEXCEPTION
+WARNING INVALID MSG
+Exception Nullpointer
