@@ -8,6 +8,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.Optional;
 import scala.Tuple2;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.commons.lang3.StringUtils.trim;
@@ -20,9 +21,9 @@ public class PairRdds {
     //
       JavaSparkContext sc = getSparkContext();
 
-      JavaRDD<String> storeAddress = sc.parallelize(List.of("Ritual, 1026 Valencia St", "Starbucks, New york",
+      JavaRDD<String> storeAddress = sc.parallelize(Arrays.asList("Ritual, 1026 Valencia St", "Starbucks, New york",
           "Philz, 748 Van Ness Ave", "Philz, 3101 24th St"));
-      JavaRDD<String> storeRating = sc.parallelize(List.of("Ritual,4.9", "Philz, 4.8"));
+      JavaRDD<String> storeRating = sc.parallelize(Arrays.asList("Ritual,4.9", "Philz, 4.8"));
       JavaPairRDD<String, String> storeAddressPair = storeAddress.mapToPair(str -> new Tuple2<>(str.split(",")[0], trim(str.split(",")[1])));
       JavaPairRDD<String, String> storeRatingPair = storeRating.mapToPair(str -> new Tuple2<>(str.split(",")[0], trim(str.split(",")[1])));
 

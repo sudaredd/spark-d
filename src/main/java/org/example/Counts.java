@@ -53,7 +53,7 @@ public class Counts {
     log.info("counts {}", counts.collect());
 
 
-    JavaRDD<Trade> trades = sc.parallelize(List.of(
+    JavaRDD<Trade> trades = sc.parallelize(Arrays.asList(
         Trade.builder().tradeId("t1").symbol("MSFT").price(270).qty(25).buySell('B').build(),
         Trade.builder().tradeId("t2").symbol("APPL").price(165).qty(20).buySell('S').build(),
         Trade.builder().tradeId("t1").symbol("MSFT").price(276).qty(23).buySell('B').build()

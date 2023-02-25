@@ -7,12 +7,16 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.SQLContext;
 import scala.Tuple2;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 import static org.example.Utils.getSparkContext;
@@ -76,6 +80,8 @@ public class Employees {
 
     JavaSparkContext sc = getSparkContext();
 
+    AtomicInteger atomicInteger = new AtomicInteger();
+    Broadcast<AtomicInteger> broadcast = sc.broadcast(atomicInteger);
     JavaRDD<String> data = sc.textFile("in/employee.csv");
 
     JavaRDD<Record> rdd_records = data
@@ -86,6 +92,8 @@ public class Employees {
           Record sd = new Record(fields[0], fields[1], Long.valueOf(fields[2].trim()), fields[3]);
           return sd;
         });
+
+
 
 
     JavaPairRDD<String, Tuple2<Long, Integer>> records_JPRDD =
@@ -104,7 +112,15 @@ public class Employees {
    // final_rdd_records.foreach(tup-> log.info("{} : {}", tup._1, tup._2 ));
 
     finalOutputRdd.foreach(m-> log.info(m));
-    finalOutputRdd.saveAsTextFile("in/emp_output");
+    log.info("number of records {}", finalOutputRdd.count());
+    finalOutputRdd.foreachPartition(stringIterator -> {
+      int nextInt = broadcast.getValue().incrementAndGet();
+      log.info("iterating by partition {}", nextInt);
+      while (stringIterator.hasNext()) {
+        log.info("inside foreach partition {} and value {} and thread {}", nextInt, stringIterator.next(), Thread.currentThread().getName());
+      }
+    });
+    finalOutputRdd.saveAsTextFile("in/emp_output-"+ UUID.randomUUID());
 
     sc.close();
  //   counts.saveAsTextFile("data_counts");

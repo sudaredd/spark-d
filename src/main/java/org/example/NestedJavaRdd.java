@@ -23,8 +23,6 @@ import java.util.stream.IntStream;
 
 class Emp implements Serializable {
 
-  Dept dept;
-
   int id;
   private String name;
 
@@ -33,7 +31,6 @@ class Emp implements Serializable {
   public Emp(int id, String name) {
     this.id = id;
     this.name = name;
-    dept = new DeptImpl("dept " + name);
   }
 
   public void setId(int id) {
@@ -54,7 +51,7 @@ class Emp implements Serializable {
 
   @Override
   public String toString() {
-    return "Emp{" + "dept=" + dept + ", id=" + id + ", name='" + name + '\'' + '}';
+    return "Emp{" + "dept=" + ", id=" + id + ", name='" + name + '\'' + '}';
   }
 }
 
@@ -63,7 +60,7 @@ class Emp implements Serializable {
 @Getter
 @Setter
 @ToString
-class DeptImpl implements Dept {
+class DeptImpl implements Dept, Serializable {
   String deptName;
 }
 @AllArgsConstructor
@@ -114,7 +111,6 @@ public class NestedJavaRdd {
         while (iterator.hasNext()) {
           Emp emp = iterator.next();
           emp.setName(emp.getName() + " first");
-          emp.dept = new SecondDeptImpl("second dept " + emp.getName());
           l.add(new Tuple2<>(emp.getId(), emp));
         }
         return l.iterator();
@@ -132,8 +128,6 @@ public class NestedJavaRdd {
         while (iterator.hasNext()) {
           Emp emp = iterator.next();
           emp.setName(emp.getName() + " second");
-          emp.dept = new SecondDeptImpl("second dept " + emp.getName());
-
           l.add(new Tuple2<>(emp.getId(), emp));
         }
         return l.iterator();
@@ -144,7 +138,7 @@ public class NestedJavaRdd {
       join.foreach(tup-> {
         log.info("id=> {}, tup1=> {}, tup2=> {}", tup._1, tup._2._1, tup._2._2);
       });
-
+      System.out.printf("completed");
     }
   }
 }
