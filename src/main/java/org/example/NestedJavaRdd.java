@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.directory.shared.kerberos.codec.kdcReqBody.actions.StoreRTime;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -47,6 +48,10 @@ class Emp implements Serializable {
 
   public String getName() {
     return name;
+  }
+
+  public List<String> getRow() {
+    return Arrays.asList(String.valueOf(getId()), getName());
   }
 
   @Override

@@ -8,16 +8,10 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.sql.SQLContext;
 import scala.Tuple2;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-
 
 import static org.example.Utils.getSparkContext;
 
@@ -81,6 +75,8 @@ public class Employees {
     JavaSparkContext sc = getSparkContext();
 
     AtomicInteger atomicInteger = new AtomicInteger();
+    org.apache.spark.Accumulator<Integer> partitionAcc = sc.accumulator(0,"partition");
+
     Broadcast<AtomicInteger> broadcast = sc.broadcast(atomicInteger);
     JavaRDD<String> data = sc.textFile("in/employee.csv");
 
@@ -120,7 +116,8 @@ public class Employees {
         log.info("inside foreach partition {} and value {} and thread {}", nextInt, stringIterator.next(), Thread.currentThread().getName());
       }
     });
-    finalOutputRdd.saveAsTextFile("in/emp_output-"+ UUID.randomUUID());
+    partitionAcc.add(1);
+    finalOutputRdd.saveAsTextFile("in/emp_output-"+ partitionAcc.value());
 
     sc.close();
  //   counts.saveAsTextFile("data_counts");
