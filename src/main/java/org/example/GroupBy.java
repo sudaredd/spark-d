@@ -3,6 +3,8 @@ package org.example;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -65,7 +67,7 @@ public class GroupBy {
       }
       JavaPairRDD<Integer, Iterable<Emp>> pairRdd = allEmps.groupByKey();
 
-      JavaRDD<String> resultRdd = pairRdd.mapPartitions(
+      JavaPairRDD<String, NullWritable> resultRdd = pairRdd.mapPartitionsToPair(
           ite -> {
             StringWriter sw = new StringWriter();
             try (CSVPrinter writer = new CSVPrinter(sw, CSVFormat.DEFAULT)) {
@@ -78,10 +80,11 @@ public class GroupBy {
                 }
               }
             }
-            return Arrays.asList(sw.toString()).iterator();
+            Tuple2<String, NullWritable> tuple2 = new Tuple2(sw.toString(), NullWritable.get());
+            return Arrays.asList(tuple2).iterator();
           });
 
-      resultRdd.saveAsTextFile("in/csv-"+ UUID.randomUUID());
+      resultRdd.saveAsHadoopFile("in/csv-"+ UUID.randomUUID(), String.class, NullWritable.class, TextOutputFormat.class);
       while (true) {
         Thread.sleep(5000);
       }

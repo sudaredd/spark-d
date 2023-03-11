@@ -59,7 +59,7 @@ public class ReadMultipleFileEmployees {
 
     JavaSparkContext sc = getSparkContext();
 
-    JavaRDD<String> data = sc.textFile("in/files/*.csv");
+    JavaRDD<String> data = sc.textFile("in/files/");
 
     JavaRDD<Record> rdd_records =
         data.filter(line -> StringUtils.isNumeric(line.split(",")[2].trim()))

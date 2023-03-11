@@ -27,8 +27,11 @@ public class PairRdds {
       storeAddressPair.foreach(getPrintln());
       JavaPairRDD<String, String> storeRatingPair = storeRating.mapToPair(str -> new Tuple2<>(str.split(",")[0], trim(str.split(",")[1])));
       storeRatingPair.foreach(getPrintln());
-/*      JavaPairRDD<String, Tuple2<String, String>> joinPair = storeAddressPair.join(storeRatingPair);
-      joinPair.foreach(val-> log.info("join key {} and values {}", val._1, val._2));*/
+/*
+      JavaPairRDD<String, Tuple2<String, String>> joinPair = storeAddressPair.join(storeRatingPair);
+      joinPair.foreach(val-> log.info("join key {} and values {}", val._1, val._2));
+
+*/
       JavaPairRDD<String, Tuple2<Optional<String>, Optional<String>>> fullJoinPair = storeAddressPair.fullOuterJoin(storeRatingPair);
       fullJoinPair.foreach(val-> log.info("full outer join key {} and values {}", val._1, val._2));
       log.info("partitioner  {}", fullJoinPair.partitioner().get().numPartitions());
