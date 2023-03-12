@@ -37,16 +37,12 @@ public class CompareFiles {
   public static void main(String[] args) {
 
     JavaSparkContext sc = getSparkContext();
-
-
     JavaRDD<String[]> existing = getJavaRDD(sc.textFile("in/existing/"));
     JavaRDD<String[]> new_ = getJavaRDD(sc.textFile("in/new/"));
 
-    JavaPairRDD<String, Iterable<Emp>> existingRows = existing.mapToPair(strings -> new Tuple2<>(strings[0], Emp.newInstance(strings)))
-        .groupByKey();
+    JavaPairRDD<String, Iterable<Emp>> existingRows = getRows(existing);
 
-    JavaPairRDD<String, Iterable<Emp>> newRows = new_.mapToPair(strings -> new Tuple2<>(strings[0], Emp.newInstance(strings)))
-        .groupByKey();
+    JavaPairRDD<String, Iterable<Emp>> newRows = getRows(new_);
 
     JavaPairRDD<String, Tuple2<Optional<Iterable<Emp>>, Optional<Iterable<Emp>>>> joinRows = existingRows.fullOuterJoin(newRows);
 
@@ -81,16 +77,10 @@ public class CompareFiles {
     sc.close();
   }
 
-  private static void print(JavaRDD<String[]> existing, String fileTyp) {
-    existing.foreachPartition(
-        iterator -> {
-          log.info("fileTyp {}", fileTyp);
-          while (iterator.hasNext()) {
-            log.info("row {}", Arrays.toString(iterator.next()));
-          }
-        });
+  private static JavaPairRDD<String, Iterable<Emp>> getRows(JavaRDD<String[]> existing) {
+    return existing.mapToPair(strings -> new Tuple2<>(strings[0], Emp.newInstance(strings)))
+        .groupByKey();
   }
-
   private static JavaRDD<String[]> getJavaRDD(JavaRDD<String> data) {
     return data.map(s -> s.split(","))
         .filter(line -> StringUtils.isNumeric(line[0].trim()));
