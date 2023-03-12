@@ -2,6 +2,7 @@ package org.example;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -10,18 +11,10 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.Optional;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.execution.columnar.ARRAY;
 import scala.Tuple2;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.example.Utils.getSparkContext;
 
@@ -31,6 +24,7 @@ public class CompareFiles {
   @AllArgsConstructor
   @NoArgsConstructor
   @Data@ToString
+  @EqualsAndHashCode
   private static class Emp implements Serializable{
     private int id;
     private String name;
@@ -56,25 +50,35 @@ public class CompareFiles {
 
     JavaPairRDD<String, Tuple2<Optional<Iterable<Emp>>, Optional<Iterable<Emp>>>> joinRows = existingRows.fullOuterJoin(newRows);
 
-    joinRows.foreach(tup-> {
-      Optional<Iterable<Emp>> iterableOptional1 = tup._2._1;
-      if (iterableOptional1.isPresent()) {
-        log.info("row {} and it's value {}", tup._1, iterableOptional1.get());
-      } else {
-        log.info("No row exists for empId {} on existing", tup._1);
-      }
-      Optional<Iterable<Emp>> iterableOptional2 = tup._2._2;
-      if (iterableOptional2.isPresent()) {
-        log.info("row {} and it's value {}", tup._1, iterableOptional2.get());
-      } else {
-        log.info("No row exists for empId {} on new", tup._1);
-      }
-
-    });
+    JavaRDD<ReportRecord> reports =
+        joinRows
+            .map(
+                tup -> {
+                  Optional<Iterable<Emp>> iterableOptional1 = tup._2._1;
+                  Optional<Iterable<Emp>> iterableOptional2 = tup._2._2;
+                  if (iterableOptional1.isPresent() && iterableOptional2.isPresent()) {
+                    if (iterableOptional1.get().equals(iterableOptional2.get())) {
+                      log.info("emp objects are equals for id {}", iterableOptional1.get());
+                      return ReportRecord.EMPTY;
+                    } else {
+                      log.info(
+                          "emp objects are not equals for id {} => {}",
+                          iterableOptional1.get(),
+                          iterableOptional2.get());
+                      return new ReportRecord(ReportEnum.NOT_EQUAL, Source.NEW, tup._1);
+                    }
+                  } else if (!iterableOptional1.isPresent()) {
+                    log.info("No row exists for empId {} on existing", tup._1);
+                    return new ReportRecord(ReportEnum.MISSING, Source.EXISTING, tup._1);
+                  } else {
+                    log.info("No row exists for empId {} on a new", tup._1);
+                    return new ReportRecord(ReportEnum.MISSING, Source.NEW, tup._1);
+                  }
+                })
+            .filter(record -> !ReportRecord.EMPTY.equals(record));
+    reports.foreach(r-> log.info("differences in a record {}", r));
 
     sc.close();
-    //   counts.saveAsTextFile("data_counts");
-
   }
 
   private static void print(JavaRDD<String[]> existing, String fileTyp) {
