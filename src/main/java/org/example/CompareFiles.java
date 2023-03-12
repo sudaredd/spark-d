@@ -49,32 +49,34 @@ public class CompareFiles {
     JavaRDD<ReportRecord> reports =
         joinRows
             .map(
-                tup -> {
-                  Optional<Iterable<Emp>> iterableOptional1 = tup._2._1;
-                  Optional<Iterable<Emp>> iterableOptional2 = tup._2._2;
-                  if (iterableOptional1.isPresent() && iterableOptional2.isPresent()) {
-                    if (iterableOptional1.get().equals(iterableOptional2.get())) {
-                      log.info("emp objects are equals for id {}", iterableOptional1.get());
-                      return ReportRecord.EMPTY;
-                    } else {
-                      log.info(
-                          "emp objects are not equals for id {} => {}",
-                          iterableOptional1.get(),
-                          iterableOptional2.get());
-                      return new ReportRecord(ReportEnum.NOT_EQUAL, Source.NEW, tup._1);
-                    }
-                  } else if (!iterableOptional1.isPresent()) {
-                    log.info("No row exists for empId {} on existing", tup._1);
-                    return new ReportRecord(ReportEnum.MISSING, Source.EXISTING, tup._1);
-                  } else {
-                    log.info("No row exists for empId {} on a new", tup._1);
-                    return new ReportRecord(ReportEnum.MISSING, Source.NEW, tup._1);
-                  }
-                })
+                tup -> getReportRecord(tup))
             .filter(record -> !ReportRecord.EMPTY.equals(record));
     reports.foreach(r-> log.info("differences in a record {}", r));
 
     sc.close();
+  }
+
+  private static ReportRecord getReportRecord(Tuple2<String, Tuple2<Optional<Iterable<Emp>>, Optional<Iterable<Emp>>>> tup) {
+    Optional<Iterable<Emp>> iterableOptional1 = tup._2._1;
+    Optional<Iterable<Emp>> iterableOptional2 = tup._2._2;
+    if (iterableOptional1.isPresent() && iterableOptional2.isPresent()) {
+      if (iterableOptional1.get().equals(iterableOptional2.get())) {
+        log.info("emp objects are equals for id {}", iterableOptional1.get());
+        return ReportRecord.EMPTY;
+      } else {
+        log.info(
+            "emp objects are not equals for id {} => {}",
+            iterableOptional1.get(),
+            iterableOptional2.get());
+        return new ReportRecord(ReportEnum.NOT_EQUAL, Source.NEW, tup._1);
+      }
+    } else if (!iterableOptional1.isPresent()) {
+      log.info("No row exists for empId {} on existing", tup._1);
+      return new ReportRecord(ReportEnum.MISSING, Source.EXISTING, tup._1);
+    } else {
+      log.info("No row exists for empId {} on a new", tup._1);
+      return new ReportRecord(ReportEnum.MISSING, Source.NEW, tup._1);
+    }
   }
 
   private static JavaPairRDD<String, Iterable<Emp>> getRows(JavaRDD<String[]> existing) {
